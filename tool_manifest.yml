@@ -1,0 +1,83 @@
+schema_version: 1
+id: notion-knowledge
+name: "Notion · Conocimiento interno"
+version: "0.1.0"
+status: poc
+owner: "Equipo I+D"
+description: >
+  Recopila conocimiento interno desde Notion (wiki/documentacion, actas de reunion y
+  tickets entre equipos), mantiene una cache local y permite busqueda/Q&A. Adaptador
+  de contrato para twave-agent-hub: lee un ToolRequest por STDIN y devuelve un
+  ToolResponse por STDOUT desde la cache.
+domain: other
+runtime: local_script
+repository: "https://github.com/joserb/notion-knowledge"
+tags: [notion, knowledge, wiki, meetings, tickets, search]
+
+entities:
+  - { name: document, access: read }
+  - { name: ticket, access: read }
+
+auth:
+  type: api_token
+  secret_ref: NOTION_TOKEN
+  scopes: [read]
+
+endpoint:
+  type: local_script
+  command: "uv run python -m notion_knowledge.agent_adapter"
+  working_dir: "."
+
+capabilities:
+  - id: search_knowledge
+    title: "Buscar en el conocimiento interno"
+    description: "Busqueda full-text sobre wiki, actas y tickets cacheados."
+    access: read-only
+    intents: [buscar_conocimiento, consultar_wiki, buscar_acta, q_and_a]
+    input_schema:
+      query:  { type: string, required: true }
+      source: { type: string, required: false, description: "wiki | meetings | tickets" }
+      kind:   { type: string, required: false, enum: ["wiki", "meeting", "ticket"] }
+      limit:  { type: integer, required: false, default: 10 }
+    output_entities: [document, ticket]
+    produces_sources: true
+    side_effects: none
+
+  - id: get_document
+    title: "Obtener un documento"
+    description: "Devuelve un item de conocimiento por id, con su texto completo."
+    access: read-only
+    intents: [abrir_documento, ver_pagina]
+    input_schema:
+      id: { type: string, required: true }
+    output_entities: [document, ticket]
+    produces_sources: true
+    side_effects: none
+
+  - id: list_sources
+    title: "Listar fuentes de conocimiento"
+    description: "Bases de datos configuradas y nº de items en cache."
+    access: read-only
+    intents: [listar_fuentes]
+    output_entities: [document]
+    produces_sources: true
+    side_effects: none
+
+data_sources:
+  - id: notion_db_wiki
+    kind: notion_database
+    description: "Base de datos de wiki / documentacion interna en Notion"
+    reference_ref: NOTION_WIKI_DB_ID
+  - id: notion_db_meetings
+    kind: notion_database
+    description: "Base de datos de actas / notas de reunion en Notion"
+    reference_ref: NOTION_MEETINGS_DB_ID
+  - id: notion_db_tickets
+    kind: notion_database
+    description: "Base de datos de tickets entre equipos en Notion"
+    reference_ref: NOTION_TICKETS_DB_ID
+
+limitations:
+  - "Trabaja sobre la cache local (data/raw); ejecuta `fetch` para actualizarla."
+  - "La calidad de la busqueda depende de la cobertura de la cache."
+  - "Solo lectura; no escribe en Notion."

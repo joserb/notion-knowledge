@@ -1,0 +1,22 @@
+# Configuracion de notion-knowledge.
+# Rellena el `id` de cada base de datos de Notion (32 hex, sin guiones o con ellos).
+# `type` debe ser uno de: wiki | meeting | ticket.
+
+[settings]
+cache_dir = "data/raw"
+export_dir = "data/export"
+
+[databases.wiki]
+id = ""               # TODO: id de la base de datos de wiki / documentacion interna
+type = "wiki"
+title_property = "Name"
+
+[databases.meetings]
+id = ""               # TODO: id de la base de datos de actas / notas de reunion
+type = "meeting"
+title_property = "Name"
+
+[databases.tickets]
+id = ""               # TODO: id de la base de datos de tickets entre equipos
+type = "ticket"
+title_property = "Name"
