@@ -2,7 +2,7 @@
 
 Lee un ToolRequest (JSON) por STDIN y escribe un ToolResponse (JSON) por STDOUT.
 Responde desde la cache local (data/raw), sin requerir acceso en vivo a Notion.
-Capacidades: search_knowledge, get_document, list_sources.
+Capacidades: search_knowledge, get_document, list_sources, stats.
 """
 
 from __future__ import annotations
@@ -11,6 +11,7 @@ import json
 import sys
 import time
 
+from notion_knowledge import stats as st
 from notion_knowledge.config import Config
 from notion_knowledge.search import search as search_items
 from notion_knowledge.store import KnowledgeStore
@@ -123,10 +124,44 @@ def cap_get_document(req):
     )
 
 
+def cap_stats(req):
+    """Segmenta tickets o reuniones desde la cache (conteos por propiedad)."""
+    payload = req.get("payload") or {}
+    source = payload.get("source")
+    if source not in ("tickets", "meetings", "notes"):
+        return _error(req, "Parametro 'source' debe ser 'tickets', 'meetings' o 'notes'.", "missing_param")
+    year = payload.get("year")
+    try:
+        year = int(year) if year is not None else None
+    except (TypeError, ValueError):
+        return _error(req, "El parametro 'year' debe ser un entero.", "bad_request")
+
+    store = _store()
+    if source == "tickets":
+        items = st.filter_by_year(store.load_items(source), year, st.TICKET_DATE)
+        result = st.ticket_summary(items, with_timing=bool(payload.get("timing")))
+    elif source == "meetings":
+        items = st.filter_by_year(store.load_items(source), year, st.MEETING_DATE)
+        result = st.meeting_summary(items, with_trend=bool(payload.get("trend")))
+    else:
+        items = st.filter_by_year(store.load_items(source), year, st.NOTE_DATE)
+        result = st.note_summary(items, with_trend=bool(payload.get("trend")))
+    result["source"] = source
+    result["year"] = year
+
+    warnings = []
+    if not items:
+        warnings.append({"code": "no_results", "severity": "info",
+                         "message": "Sin items en cache; ¿se ha ejecutado 'fetch'?"})
+    return _envelope(req, "ok", result, warnings=warnings,
+                     confidence=0.9 if items else 0.3)
+
+
 CAPABILITIES = {
     "search_knowledge": cap_search_knowledge,
     "get_document": cap_get_document,
     "list_sources": cap_list_sources,
+    "stats": cap_stats,
 }
 
 

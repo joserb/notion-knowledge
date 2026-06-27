@@ -12,11 +12,16 @@ type = "wiki"
 title_property = "Name"
 
 [databases.meetings]
-id = ""               # TODO: id de la base de datos de actas / notas de reunion
+id = "6e72ecf8474d486b958418484940a845"
 type = "meeting"
 title_property = "Name"
 
 [databases.tickets]
-id = ""               # TODO: id de la base de datos de tickets entre equipos
+id = "1728ced44f1880b2b587d411f8f4e7ed"
 type = "ticket"
 title_property = "Name"
+
+[databases.notes]
+id = "2cf0db3da4e845fab1c84dd2315625b5"
+type = "note"
+title_property = "Nombre"

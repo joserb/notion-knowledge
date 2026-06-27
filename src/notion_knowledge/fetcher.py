@@ -61,4 +61,8 @@ class KnowledgeFetcher:
         return count
 
     def fetch_all(self, *, with_body: bool = True) -> dict[str, int]:
-        return {k: self.fetch_database(k, with_body=with_body) for k in self.config.databases}
+        return {
+            k: self.fetch_database(k, with_body=with_body)
+            for k, db in self.config.databases.items()
+            if db.database_id
+        }

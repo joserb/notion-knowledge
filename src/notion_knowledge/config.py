@@ -22,7 +22,7 @@ else:  # pragma: no cover
 CONFIG_DIR = Path(__file__).parent.parent.parent / "config"
 
 # Tipos de fuente de conocimiento soportados.
-KNOWLEDGE_KINDS = ("wiki", "meeting", "ticket")
+KNOWLEDGE_KINDS = ("wiki", "meeting", "ticket", "note")
 
 
 @dataclass

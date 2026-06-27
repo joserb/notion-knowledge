@@ -63,6 +63,24 @@ capabilities:
     produces_sources: true
     side_effects: none
 
+  - id: stats
+    title: "Estadisticas de tickets, reuniones o notas"
+    description: >
+      Segmenta los tickets (tipo, asignado, prioridad, estado), las reuniones (tipo,
+      modalidad, tema, moderador, asistentes, redactado por) o las notas (origen,
+      actividad, responsable, importante, archivada) desde la cache. Opcionalmente:
+      tiempo hasta cambio de estado (tickets) o conteo por anio (reuniones / notas).
+    access: read-only
+    intents: [estadisticas, segmentar_tickets, segmentar_reuniones, segmentar_notas, metricas]
+    input_schema:
+      source: { type: string, required: true, enum: ["tickets", "meetings", "notes"] }
+      year:   { type: integer, required: false, description: "Filtra por anio (creacion de ticket / Fecha de reunion / Creada de nota)" }
+      timing: { type: boolean, required: false, description: "Solo tickets: tiempo (proxy) hasta cambio de estado" }
+      trend:  { type: boolean, required: false, description: "Reuniones o notas: numero de items por anio" }
+    output_entities: []
+    produces_sources: false
+    side_effects: none
+
 data_sources:
   - id: notion_db_wiki
     kind: notion_database
@@ -76,6 +94,10 @@ data_sources:
     kind: notion_database
     description: "Base de datos de tickets entre equipos en Notion"
     reference_ref: NOTION_TICKETS_DB_ID
+  - id: notion_db_notes
+    kind: notion_database
+    description: "Base de datos de notas (origen, actividad, responsable) en Notion"
+    reference_ref: NOTION_NOTES_DB_ID
 
 limitations:
   - "Trabaja sobre la cache local (data/raw); ejecuta `fetch` para actualizarla."

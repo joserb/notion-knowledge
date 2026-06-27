@@ -32,17 +32,34 @@ uv run notion-knowledge fetch -d wiki           # solo una DB
 uv run notion-knowledge export                  # caché -> Markdown en data/export
 uv run notion-knowledge search "actualizacion firmware"   # búsqueda full-text
 uv run notion-knowledge search "rauc" -k wiki -n 5
+
+uv run notion-knowledge tickets-stats                   # segmenta tickets (tipo/asignado/prioridad/estado)
+uv run notion-knowledge tickets-stats -y 2026 --tiempos  # solo 2026 + proxy de tiempo de cambio de estado
+uv run notion-knowledge meetings-stats                  # segmenta reuniones (tipo/modalidad/tema/participantes)
+uv run notion-knowledge meetings-stats -y 2026 --tendencia  # solo 2026 + nº de reuniones por año
+uv run notion-knowledge notes-stats                     # segmenta notas (origen/actividad/responsable/banderas)
+uv run notion-knowledge notes-stats -y 2026 --tendencia  # solo 2026 + nº de notas por año
 ```
+
+> `tickets-stats` mapea la prioridad de estrellas a 1–3. El proxy `--tiempos` usa
+> `last_edited_time` (Notion no guarda la fecha real de cambio de estado), así que es
+> un **límite superior**. `meetings-stats` filtra por la propiedad `Fecha` de la reunión.
 
 ## Integración con twave-agent-hub
 
 El manifiesto (`tool_manifest.yml`) y el adaptador (`agent_adapter.py`) exponen la
-herramienta al hub con tres capacidades read-only: `search_knowledge`, `get_document`
-y `list_sources`. El adaptador responde desde la caché local (sin Notion en vivo).
+herramienta al hub con cuatro capacidades read-only: `search_knowledge`, `get_document`,
+`list_sources` y `stats`. El adaptador responde desde la caché local (sin Notion en vivo).
 
 ```bash
 echo '{"request_id":"r1","tool":"notion-knowledge","capability":"search_knowledge",
        "payload":{"query":"rauc"}}' | uv run python -m notion_knowledge.agent_adapter
+
+# Segmentaciones (tickets o reuniones) como JSON para el agente:
+echo '{"capability":"stats","payload":{"source":"tickets","year":2026,"timing":true}}' \
+  | uv run python -m notion_knowledge.agent_adapter
+echo '{"capability":"stats","payload":{"source":"meetings","trend":true}}' \
+  | uv run python -m notion_knowledge.agent_adapter
 ```
 
 ## Estructura
