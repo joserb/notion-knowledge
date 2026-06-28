@@ -14,6 +14,14 @@ runtime: local_script
 repository: "https://github.com/joserb/notion-knowledge"
 tags: [notion, knowledge, wiki, meetings, tickets, search]
 
+# Clasificacion para la planificacion del hub (ver twave-agent-hub manifest.schema).
+# Conocimiento curado sobre cache local sincronizada desde Notion.
+tool_type: curated_domain_tool
+data_mode: curated
+freshness_policy: last_sync
+risk_level: low
+capability_mode: read_only
+
 entities:
   - { name: document, access: read }
   - { name: ticket, access: read }
@@ -80,6 +88,21 @@ capabilities:
     output_entities: []
     produces_sources: false
     side_effects: none
+
+  - id: export_entity_cards
+    title: "Exportar entity cards al atlas"
+    description: >
+      Genera entity cards de documentos/actas (document) y tickets en formato del
+      twave-knowledge-atlas (data/exports/entity_cards.jsonl) desde la cache local.
+      Escribe un fichero local; no modifica Notion.
+    access: read-only
+    intents: [exportar_atlas, generar_entity_cards, alimentar_atlas]
+    input_schema:
+      out:    { type: string, required: false, description: "Ruta del JSONL de salida" }
+      source: { type: string, required: false, description: "Filtra por fuente (wiki, meetings, tickets)" }
+    output_entities: [document, ticket]
+    produces_sources: false
+    side_effects: writes
 
 data_sources:
   - id: notion_db_wiki
