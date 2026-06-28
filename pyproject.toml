@@ -3,7 +3,7 @@ name = "notion-knowledge"
 version = "0.1.0"
 description = "Recopilacion y consulta de conocimiento interno desde Notion (wiki, actas, tickets)"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.14"
 dependencies = [
     "click>=8.1",
     "notion-client>=2.0",
