@@ -86,3 +86,13 @@ def test_build_all_counts() -> None:
     assert len(cards) == 2
     for card in cards:
         assert card["id"] and card["type"] and card["canonical_name"]
+
+
+def test_untitled_items_are_skipped() -> None:
+    """Un item sin título (página en blanco) no genera card basura."""
+    cards = build_all([
+        _item(id="ok", title="Con título"),
+        _item(id="blank", kind="meeting", title="", text="", properties={}),
+        _item(id="spaces", title="   "),
+    ])
+    assert [c["id"] for c in cards] == ["document:ok"]

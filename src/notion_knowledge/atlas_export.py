@@ -111,9 +111,18 @@ def card_for_item(item: Any) -> dict[str, Any]:
     }
 
 
+def _is_exportable(item: Any) -> bool:
+    """Una card necesita un título usable para tener identidad propia. Los items
+    sin título (p. ej. una página de reunión creada en blanco) producirían una
+    card con el page-id crudo como nombre y sin contenido, así que se omiten."""
+    return bool((getattr(item, "title", "") or "").strip())
+
+
 def build_all(items: list[Any]) -> list[dict[str, Any]]:
-    """Construye las cards para una lista de KnowledgeItem. Sin IO."""
-    return [card_for_item(item) for item in items]
+    """Construye las cards para una lista de KnowledgeItem. Sin IO.
+
+    Omite los items sin título usable (ver ``_is_exportable``)."""
+    return [card_for_item(item) for item in items if _is_exportable(item)]
 
 
 def _load_items(source: str | None = None) -> list[Any]:
@@ -133,10 +142,14 @@ def write_jsonl(cards: list[dict[str, Any]], output_path: Path) -> Path:
     return output_path
 
 
-def export(output_path: Path | None = None, source: str | None = None) -> tuple[Path, int]:
-    cards = build_all(_load_items(source))
+def export(
+    output_path: Path | None = None, source: str | None = None
+) -> tuple[Path, int, int]:
+    """Exporta las cards. Devuelve (ruta, nº exportadas, nº items omitidos)."""
+    items = _load_items(source)
+    cards = build_all(items)
     out = write_jsonl(cards, Path(output_path) if output_path else DEFAULT_EXPORT)
-    return out, len(cards)
+    return out, len(cards), len(items) - len(cards)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -147,8 +160,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out", type=Path, default=None, help=f"Salida JSONL (def. {DEFAULT_EXPORT})")
     parser.add_argument("--source", default=None, help="Filtra por fuente (p. ej. wiki, meetings, tickets)")
     args = parser.parse_args(argv)
-    out, count = export(output_path=args.out, source=args.source)
-    print(f"Exportadas {count} entity cards a {out}")
+    out, count, skipped = export(output_path=args.out, source=args.source)
+    msg = f"Exportadas {count} entity cards a {out}"
+    if skipped:
+        msg += f" ({skipped} item(s) sin título omitidos)"
+    print(msg)
     return 0
 
 
