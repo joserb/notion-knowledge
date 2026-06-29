@@ -43,6 +43,44 @@ def test_meeting_maps_to_document_keeps_kind_in_source() -> None:
     assert card["source_refs"][0]["source_type"] == "meeting"
 
 
+def test_meeting_name_is_qualified_with_date() -> None:
+    """Una reunión lleva su fecha en el nombre canónico para no colapsar con
+    otras instancias del mismo título recurrente."""
+    card = card_for_item(
+        _item(kind="meeting", id="m1", title="Reunión de producción",
+              properties={"Fecha": "2026-04-27"})
+    )
+    assert card["canonical_name"] == "Reunión de producción (2026-04-27)"
+
+
+def test_recurring_meetings_get_distinct_names() -> None:
+    """Dos actas del mismo título y distinta fecha producen nombres distintos
+    (no se fusionarían por alias en el atlas)."""
+    a = card_for_item(_item(kind="meeting", id="a", title="Semanal T8",
+                            properties={"Fecha": "2026-05-04"}))
+    b = card_for_item(_item(kind="meeting", id="b", title="Semanal T8",
+                            properties={"Fecha": "2026-05-11"}))
+    assert a["canonical_name"] != b["canonical_name"]
+    assert a["id"] != b["id"]
+
+
+def test_meeting_falls_back_to_created_time_without_fecha() -> None:
+    card = card_for_item(
+        _item(kind="meeting", id="m2", title="Sin Fecha",
+              created_time="2026-03-01T09:00:00Z")
+    )
+    assert card["canonical_name"] == "Sin Fecha (2026-03-01)"
+
+
+def test_non_meeting_names_are_not_date_qualified() -> None:
+    """Wiki y tickets conservan el título sin fecha (su título ya es único)."""
+    assert card_for_item(_item())["canonical_name"] == "Doc de prueba"
+    assert (
+        card_for_item(_item(kind="ticket", id="t1", title="Bug X"))["canonical_name"]
+        == "Bug X"
+    )
+
+
 def test_build_all_counts() -> None:
     cards = build_all([_item(id="a"), _item(id="b", kind="ticket")])
     assert len(cards) == 2

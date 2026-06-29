@@ -45,6 +45,33 @@ def _summary(text: str, limit: int = 240) -> str:
     return text[: limit - 1] + "…" if len(text) > limit else text
 
 
+def _meeting_date(item: Any) -> str:
+    """Fecha real de la reunión (propiedad ``Fecha`` de Notion); si falta, la de
+    creación. Devuelve solo la parte ``YYYY-MM-DD``."""
+    props = getattr(item, "properties", None) or {}
+    fecha = props.get("Fecha")
+    if isinstance(fecha, str) and fecha.strip():
+        return fecha.strip()[:10]
+    return (getattr(item, "created_time", "") or "")[:10]
+
+
+def _canonical_name(item: Any) -> str:
+    """Nombre canónico de la card.
+
+    Las reuniones recurrentes comparten título (p. ej. la "Reunión de producción"
+    semanal). Como el atlas fusiona entidades que comparten un alias y el nombre
+    canónico actúa como alias, sin desambiguar todas las instancias colapsarían en
+    una sola entidad y se perdería el histórico. Cualificamos el nombre de cada
+    acta con su fecha para que cada reunión sea una entidad propia.
+    """
+    title = item.title or item.id
+    if getattr(item, "kind", "") == "meeting":
+        date = _meeting_date(item)
+        if date:
+            return f"{title} ({date})"
+    return title
+
+
 def card_for_item(item: Any) -> dict[str, Any]:
     """Construye una EntityCard a partir de un KnowledgeItem. Sin IO."""
     etype = _entity_type(getattr(item, "kind", ""))
@@ -69,7 +96,7 @@ def card_for_item(item: Any) -> dict[str, Any]:
     return {
         "id": f"{etype}:{page_id}",
         "type": etype,
-        "canonical_name": item.title or page_id,
+        "canonical_name": _canonical_name(item),
         "aliases": [],
         "summary": _summary(getattr(item, "text", "")),
         "known_in": [GATEWAY],
